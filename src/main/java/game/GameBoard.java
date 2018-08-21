@@ -17,24 +17,49 @@ public class GameBoard extends JPanel {
   private static final Color BG_COLOR = Color.decode("#e6f2ff");
   private static final Color BLOCK_COLOR = Color.decode("#595959");
   private static final Color BALL_COLOR = Color.decode("#004d99");
+  private static final Color DRAG_BALL_COLOR = Color.decode("#ff8899");
 
   private List<Block> blocks;
   private BallState ballState;
 
+  private boolean dragging;
+  private Point ballDragStart;
+  private Point ballDragCurrent;
+
   public GameBoard(List<Block> blocks) {
     this.blocks = blocks;
+    ballState = null;
 
     setBackground(BG_COLOR);
     setLayout(new BorderLayout());
 
-    addMouseListener(new MouseAdapter() {
+    MouseAdapter mouseAdapter = new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
-        System.out.println(e.getX() + " : " + e.getY());
-        Point newPos = Point.of(e.getX() * 1.0 / getSize().width, e.getY() * 1.0 / getSize().height);
-        ballState = new BallState(newPos, ballState.heading);
+        dragging = true;
+        ballDragStart = Point.of(e.getX() * 1.0 / getSize().width, e.getY() * 1.0 / getSize().height);
+        ballDragCurrent = ballDragStart;
       }
-    });
+
+      @Override
+      public void mouseDragged(MouseEvent e) {
+        if (dragging) {
+          ballDragCurrent = Point.of(e.getX() * 1.0 / getSize().width, e.getY() * 1.0 / getSize().height);
+        }
+      }
+
+      @Override
+      public void mouseReleased(MouseEvent e) {
+        dragging = false;
+        if (ballDragStart != null && ballDragCurrent != null) {
+          ballState = new BallState(ballDragStart, ballDragStart.headingTo(ballDragCurrent));
+          ballDragStart = null;
+          ballDragCurrent = null;
+        }
+      }
+    };
+    addMouseListener(mouseAdapter);
+    addMouseMotionListener(mouseAdapter);
   }
 
   public void beginRun(BallState originState) {
@@ -42,6 +67,10 @@ public class GameBoard extends JPanel {
   }
 
   public void update() {
+    if (ballState == null) {
+      return;
+    }
+
     Heading curHeading = ballState.heading;
     Heading newHeading = ballState.heading;
     Point curPosition = ballState.position;
@@ -56,6 +85,8 @@ public class GameBoard extends JPanel {
         Point intersectPoint = curPosition.followHeading(curHeading, distToWall);
         newHeading = curHeading.reflect(reflector);
         newPosition = intersectPoint.followHeading(newHeading, overrunDist);
+
+        blocks.remove(block);
         break;
       }
     }
@@ -72,7 +103,13 @@ public class GameBoard extends JPanel {
     for (Block b : blocks) {
       drawBlock(g, getSize(), b);
     }
-    drawBall(g, getSize(), ballState);
+    if (dragging) {
+      if (ballDragStart != null) {
+        drawBallDrag(g, getSize(), ballDragStart, ballDragCurrent);
+      }
+    } else if (ballState != null) {
+      drawBallNormal(g, getSize(), ballState);
+    }
   }
 
   private static void drawBlock(Graphics g, Dimension size, Block b) {
@@ -80,18 +117,25 @@ public class GameBoard extends JPanel {
     g.fillRect(w(b.x, size), h(b.y, size), w(b.w, size), h(b.h, size));
   }
 
-  private static void drawBall(Graphics g, Dimension size, BallState b) {
+  private static void drawBallNormal(Graphics g, Dimension size, BallState b) {
     g.setColor(BALL_COLOR);
     g.fillOval(w(b.position.x, size) - BALL_DIAMETER_PIXELS / 2, h(b.position.y, size) - BALL_DIAMETER_PIXELS / 2,
         BALL_DIAMETER_PIXELS, BALL_DIAMETER_PIXELS);
+  }
+
+  private static void drawBallDrag(Graphics g, Dimension size, Point ballDragStart, Point ballDragCurrent) {
+    g.setColor(DRAG_BALL_COLOR);
+    g.fillOval(w(ballDragStart.x, size) - BALL_DIAMETER_PIXELS / 2, h(ballDragStart.y, size) - BALL_DIAMETER_PIXELS / 2,
+        BALL_DIAMETER_PIXELS, BALL_DIAMETER_PIXELS);
 
     // Make an arrow from where we are to where we will be in the near future
-    Point endOfArrow = b.position.followHeading(b.heading, BallState.SPEED * 10);
-    drawLine(g, size, b.position, endOfArrow);
-    double arrowTipLength = 0.005;
-    Point arrowTip1 = endOfArrow.followHeading(b.heading.addDeg(135), arrowTipLength);
+    Point endOfArrow = ballDragCurrent;
+    drawLine(g, size, ballDragStart, endOfArrow);
+    double arrowTipLength = 0.01;
+    Heading heading = ballDragStart.headingTo(ballDragCurrent);
+    Point arrowTip1 = endOfArrow.followHeading(heading.addDeg(135), arrowTipLength);
     drawLine(g, size, endOfArrow, arrowTip1);
-    Point arrowTip2 = endOfArrow.followHeading(b.heading.addDeg(-135), arrowTipLength);
+    Point arrowTip2 = endOfArrow.followHeading(heading.addDeg(-135), arrowTipLength);
     drawLine(g, size, endOfArrow, arrowTip2);
   }
 

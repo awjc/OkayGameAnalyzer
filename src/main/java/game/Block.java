@@ -37,4 +37,23 @@ public class Block extends Shape {
     return p.x >= x && p.x <= x + w &&
         p.y >= y && p.y <= y + h;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (o == null) {
+      return false;
+    }
+    if (!(o.getClass() == this.getClass())) {
+      return false;
+    }
+    Block ob = (Block) o;
+    double tolerance = 1e-9;
+    return Math.abs(ob.x - x) < tolerance &&
+        Math.abs(ob.y - y) < tolerance &&
+        Math.abs(ob.w - w) < tolerance &&
+        Math.abs(ob.h - h) < tolerance;
+  }
 }

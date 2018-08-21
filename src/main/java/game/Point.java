@@ -21,6 +21,10 @@ public class Point {
     return new Point(x + deltaX, y + deltaY);
   }
 
+  public Heading headingTo(Point other) {
+    return Heading.rad(Math.atan2(other.y - y, other.x - x));
+  }
+
   public double distanceSq(Point other) {
     return (other.y - y) * (other.y - y) + (other.x - x) * (other.x - x);
   }

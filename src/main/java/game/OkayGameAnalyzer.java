@@ -1,6 +1,7 @@
 package game;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -10,6 +11,7 @@ import javax.swing.WindowConstants;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.util.Arrays;
 import java.util.List;
 
 public class OkayGameAnalyzer {
@@ -42,10 +44,6 @@ public class OkayGameAnalyzer {
     gamePanel.setLayout(new GridLayout(0, 1));
     gamePanel.add(gb);
 
-    Point startingPoint = Point.of(0.2, 0.1);
-    Heading startingHeading = Heading.deg(45);
-    gb.beginRun(new BallState(startingPoint, startingHeading));
-
     Timer timer = new Timer(15, e -> {
       gb.update();
       gamePanel.paintImmediately(0, 0, gamePanel.getWidth(), gamePanel.getHeight());
@@ -54,9 +52,9 @@ public class OkayGameAnalyzer {
   }
 
   private static List<Block> makeBoard() {
-    return ImmutableList.of(
-        Block.of(0.5, 0.3, 0.15, 0.45),
-        Block.of(0.4, 0.4, 0.03, 0.40)
+    return Lists.newArrayList(
+        Block.of(0.5, 0.3, 0.15, 0.85),
+        Block.of(0.4, 0.4, 0.03, 0.80)
     );
   }
 }
